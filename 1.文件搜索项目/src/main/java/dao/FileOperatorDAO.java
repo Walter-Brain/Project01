@@ -2,44 +2,40 @@ package dao;
 
 import app.FileMeta;
 import util.DBUtil;
-import util.Pingyin4j;
+import util.Pinyin4jUtil;
 
 import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created with IntelliJ IDEA
- * Description:
- * User:S-
- * Date:2020/1/12-9:20
- * Version: 1.0
- **/
-
 public class FileOperatorDAO {
+
     public static List<FileMeta> query(String dirPath) {
         Connection connection = null;
         PreparedStatement statement = null;
         ResultSet resultSet = null;
         List<FileMeta> metas = new ArrayList<>();
-        try {
+        try{
             connection = DBUtil.getConnection();
-            String sql = "select name,path,size,last_modified,is_directory" + "from file_meta where path = ?";
+            String sql = "select name, path, size, last_modified, is_directory" +
+                    " from file_meta where path=?";
             statement = connection.prepareStatement(sql);
+            statement.setString(1, dirPath);
             resultSet = statement.executeQuery();
-            while (resultSet.next()) {
+            while(resultSet.next()){
                 String name = resultSet.getString("name");
                 String path = resultSet.getString("path");
                 long size = resultSet.getLong("size");
                 long last_modified = resultSet.getLong("last_modified");
                 boolean is_directory = resultSet.getBoolean("is_directory");
                 FileMeta meta = new FileMeta(name, path, size, last_modified, is_directory);
+                System.out.println("query: "+name+", "+path);
                 metas.add(meta);
             }
-        } catch (Exception e) {
+        }catch (Exception e){
             e.printStackTrace();
-        } finally {
+        }finally {
             DBUtil.close(connection, statement, resultSet);
         }
         return metas;
@@ -50,37 +46,40 @@ public class FileOperatorDAO {
         PreparedStatement statement = null;
         try {
             try {
-                //1.获取连接
+                // 1.获取连接
                 connection = DBUtil.getConnection();
                 String sql = "insert into file_meta" +
-                        "(name,path,is_directory,pinyin," + "pinyin_first,size,last_modified)" +
-                        "values(?,?,?,?,?,?,?)";
-                //2.获取操作命令对象
+                        " (name, path, is_directory, pinyin," +
+                        " pinyin_first, size, last_modified)" +
+                        " values (?,?,?,?,?,?,?)";
+
+                // 2.获取操作命令对象
                 statement = connection.prepareStatement(sql);
-                //填充占位符
+                // 填充占位符
                 statement.setString(1, localMeta.getName());
                 statement.setString(2, localMeta.getPath());
-                statement.setBoolean(3, localMeta.isDirectory());
+                statement.setBoolean(3, localMeta.getDirectory());
                 String pinyin = null;
                 String pinyin_first = null;
-                //包含中文字符是，需要保存全拼和拼音首字母
-                if (Pingyin4j.containsChinese(localMeta.getName())) {
-                    String[] pinyins = Pingyin4j.get(localMeta.getName());
+
+                // 包含中文字符时，需要保存全拼和拼音首字母
+                if(Pinyin4jUtil.containsChinese(localMeta.getName())){
+                    String[] pinyins = Pinyin4jUtil.get(localMeta.getName());
                     pinyin = pinyins[0];
                     pinyin_first = pinyins[1];
-
                 }
                 statement.setString(4, pinyin);
                 statement.setString(5, pinyin_first);
                 statement.setLong(6, localMeta.getSize());
-                statement.setTimestamp(7, new Timestamp(localMeta.getLastModified()));
-                //3.执行sql语句
+                statement.setTimestamp(7,
+                        new Timestamp(localMeta.getLastModified()));
+                System.out.println("insert:"+localMeta.getName()+", "+localMeta.getPath());
+                // 3.执行sql语句
                 statement.executeUpdate();
             } finally {
                 DBUtil.close(connection, statement);
             }
-        } catch (
-                SQLException e) {
+        } catch (SQLException e){
             e.printStackTrace();
         }
     }
@@ -89,69 +88,88 @@ public class FileOperatorDAO {
         Connection connection = null;
         PreparedStatement statement = null;
         try {
-            //1.获取连接
+            // 1.获取连接
             connection = DBUtil.getConnection();
             connection.setAutoCommit(false);
-            String sql = "delete from file_meta where name=?" + " and path=? and is_directory=?";
-            //2.获取操作命令对象
+            String sql = "delete from file_meta where name=?" +
+                    " and path=? and is_directory=?";
+            // 2.获取操作命令对象
             statement = connection.prepareStatement(sql);
-            //填充占位符
+            // 填充占位符
             statement.setString(1, meta.getName());
             statement.setString(2, meta.getPath());
-            statement.setBoolean(3, meta.isDirectory());
-            //3.执行sql语句
+            statement.setBoolean(3, meta.getDirectory());
+            // 3.执行sql语句
             statement.executeUpdate();
-            //删除子文件夹
-            if (meta.getDirectory) {
-                sql = "delete from file_meta where path=? or path like?";
+            // 删除子文件/子文件夹
+            if(meta.getDirectory()){
+                sql = "delete from file_meta where path=? or path like ?";
                 statement = connection.prepareStatement(sql);
-                String path = meta.getPath() + File.separator + meta.getName();
+                // meta path=d:/ name=abc
+                // name=hello path=d:/abc
+                // name=world path=d:/abc/....
+                String path = meta.getPath()+ File.separator+meta.getName();
                 statement.setString(1, path);
-                statement.setString(2, path + File.separator + "%");
-                System.out.println("delete like" + meta.getPath() + File.separator + meta.getName() + "%");
+                statement.setString(2,
+                        path+File.separator+"%");
+                System.out.println("delete like:"+meta.getPath()+ File.separator+meta.getName());
                 statement.executeUpdate();
             }
             connection.commit();
+
         } catch (SQLException e) {
             e.printStackTrace();
             try {
                 if (connection != null)
                     connection.rollback();
-            } catch (SQLException e1) {
-                e1.printStackTrace();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
             }
         } finally {
             DBUtil.close(connection, statement);
         }
     }
 
+
     public static void main(String[] args) {
-        delete(new FileMeta("测试数据", "D:\\20200112\\20200112", 0L, 0L, false));
+//        System.out.println(query("D:\\maven-test - 副本"));;
+        delete(new FileMeta("Downloads", "D:\\",
+                0L, 0L, true));
     }
 
+    /**
+     * path=""
+     * path="D:/"
+     * @param path
+     * @param text
+     * @return
+     */
     public static List<FileMeta> search(String dir, String text) {
         Connection connection = null;
         PreparedStatement statement = null;
         ResultSet resultSet = null;
         List<FileMeta> metas = new ArrayList<>();
-        try {
+        try{
             connection = DBUtil.getConnection();
-            boolean empty = dir == null || dir.trim().length() == 0;
-            String sql = "select name,path,size,last_modified,is_directory" + "from file_meta where (name like ? " +
-                    "or pinyin like ?" + " or pinyin_first like ?)"
+            boolean empty = dir==null || dir.trim().length()==0;
+            // D:\TMP\maven-test - 副本\新建文件夹
+            // name=新建文件夹 path=D:\TMP\maven-test - 副本
+            String sql = "select name, path, size, last_modified, is_directory" +
+                    " from file_meta where (name like ? or pinyin like ?" +
+                    " or pinyin_first like ?)"
                     + (empty ?
-                    "" : "and (path =? or path like ?)");
+                    "" : " and (path=? or path like ?)");
             statement = connection.prepareStatement(sql);
-            statement.setString(1, "%" + text + "%");
-            statement.setString(2, "%" + text + "%");
-            statement.setString(3, "%" + text + "%");
-            if (!empty) {
+            statement.setString(1, "%"+text+"%");
+            statement.setString(2, "%"+text+"%");
+            statement.setString(3, "%"+text+"%");
+            if(!empty){
                 statement.setString(4, dir);
-                statement.setString(5, dir + File.separator + "%");
+                statement.setString(5, dir+File.separator+"%");
             }
-            System.out.println("search path" + dir + ", " + "text=" + text);
+            System.out.println("search path="+dir+", "+"text="+text);
             resultSet = statement.executeQuery();
-            while (resultSet.next()) {
+            while(resultSet.next()){
                 String name = resultSet.getString("name");
                 String path = resultSet.getString("path");
                 long size = resultSet.getLong("size");
@@ -159,20 +177,11 @@ public class FileOperatorDAO {
                 boolean is_directory = resultSet.getBoolean("is_directory");
                 FileMeta meta = new FileMeta(name, path, size, last_modified, is_directory);
                 metas.add(meta);
-                //3.执行sql语句
-                statement.executeUpdate();
             }
-            connection.commit();
-        } catch (SQLException e) {
+        }catch (Exception e){
             e.printStackTrace();
-            try {
-                if (connection != null)
-                    connection.rollback();
-            } catch (SQLException e1) {
-                e1.printStackTrace();
-            }
-        } finally {
-            DBUtil.close(connection, statement);
+        }finally {
+            DBUtil.close(connection, statement, resultSet);
         }
         return metas;
     }

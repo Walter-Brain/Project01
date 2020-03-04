@@ -3,26 +3,20 @@ package app;
 import util.Util;
 
 import java.io.File;
-
-/**
- * Created with IntelliJ IDEA
- * Description:
- * User:S-
- * Date:2020/1/5-9:24
- * Version: 1.0
- **/
+import java.util.Objects;
 
 public class FileMeta {
-    public boolean getDirectory;
+
     private String name;
     private String path;
-    private long size;
-    private long lastModified;
-    private boolean isDirectory;
+    private Long size;
+    private Long lastModified;
+    private Boolean isDirectory;
     private String sizeText;
     private String lastModifiedText;
 
-    public FileMeta(String name, String path, long size, long lastModified, boolean isDirectory) {
+    public FileMeta(String name, String path, Long size,
+                    Long lastModified, Boolean isDirectory) {
         this.name = name;
         this.path = path;
         this.size = size;
@@ -33,11 +27,24 @@ public class FileMeta {
     }
 
     public FileMeta(File child) {
-        this.name = name;
-        this.path = path;
-        this.isDirectory = isDirectory;
-        this.sizeText = sizeText;
-        this.lastModifiedText = lastModifiedText;
+        this(child.getName(),child.getParent(),
+                child.length(), child.lastModified(),
+                child.isDirectory());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FileMeta meta = (FileMeta) o;
+        return Objects.equals(name, meta.name) &&
+                Objects.equals(path, meta.path) &&
+                Objects.equals(isDirectory, meta.isDirectory);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, path, isDirectory);
     }
 
     @Override
@@ -67,27 +74,27 @@ public class FileMeta {
         this.path = path;
     }
 
-    public long getSize() {
+    public Long getSize() {
         return size;
     }
 
-    public void setSize(long size) {
+    public void setSize(Long size) {
         this.size = size;
     }
 
-    public long getLastModified() {
+    public Long getLastModified() {
         return lastModified;
     }
 
-    public void setLastModified(long lastModified) {
+    public void setLastModified(Long lastModified) {
         this.lastModified = lastModified;
     }
 
-    public boolean isDirectory() {
+    public Boolean getDirectory() {
         return isDirectory;
     }
 
-    public void setDirectory(boolean directory) {
+    public void setDirectory(Boolean directory) {
         isDirectory = directory;
     }
 

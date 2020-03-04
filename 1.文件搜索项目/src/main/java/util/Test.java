@@ -45,7 +45,7 @@ public class Test {
 ////            = new CyclicBarrier(0);
 
     public static void main(String[] args) throws InterruptedException, BrokenBarrierException {
-        for (int i = 0; i < 3; i++) {
+        for(int i=0; i<3; i++){
             final int j = i;
 //            new Thread(new Task(LATCH, String.valueOf(j))).start();
 //            new Thread(new Task(BARRIER, String.valueOf(j))).start();
@@ -57,7 +57,7 @@ public class Test {
         System.out.println("执行完毕");
     }
 
-    private static class Task implements Runnable {
+    private static class Task implements Runnable{
         private CountDownLatch cdl;
         private CyclicBarrier barrier;
         private Semaphore semaphore;
@@ -97,17 +97,17 @@ public class Test {
     }
 
     public static void main1(String[] args) throws InterruptedException {
-        for (int i = 0; i < 10; i++) {
+        for(int i=0; i<10; i++){
             COUNT.incrementAndGet();
             final int j = i;
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    System.out.println(j + "=====" + COUNT);
-                    if (j == 5) {
+                    System.out.println(j+"====="+COUNT);
+                    if(j == 5){
                         throw new RuntimeException();
                     }
-                    if (COUNT.decrementAndGet() == 0) {
+                    if(COUNT.decrementAndGet() == 0){
                         //通知
                     }
 
@@ -115,7 +115,7 @@ public class Test {
             }).start();
         }
         // 等待
-        System.out.println("执行完毕：" + COUNT);
+        System.out.println("执行完毕："+COUNT);
     }
 
 }

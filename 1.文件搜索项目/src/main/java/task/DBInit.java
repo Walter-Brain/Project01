@@ -3,35 +3,27 @@ package task;
 import util.DBUtil;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
-
-/**
- * Created with IntelliJ IDEA
- * Description:
- * User:S-
- * Date:2020/1/4-16:35
- * Version: 1.0
- **/
 
 public class DBInit {
-    public static void init() {
+
+    public static void init(){
         try {
+            // 获取数据库初始化文件的输入流
             InputStream is = DBInit.class.getClassLoader()
                     .getResourceAsStream("init.sql");
-            BufferedReader in = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(is, "UTF-8"));
             StringBuilder sb = new StringBuilder();
             String line;
-            while ((line = in.readLine()) != null) {
-                //忽略--注释代码
-                int index = line.indexOf("--");
-                if (index != -1) {
-                    line.substring(0, index);
+            while((line=in.readLine()) != null){
+                // 忽略注释--代码
+                int idx = line.indexOf("--");
+                if(idx != -1){
+                    line = line.substring(0, idx);
                 }
                 sb.append(line);
             }
@@ -39,23 +31,21 @@ public class DBInit {
             Connection connection = null;
             Statement statement = null;
             try {
-                for (String s : sqls) {
+                for(String sql : sqls){
                     connection = DBUtil.getConnection();
                     statement = connection.createStatement();
-                    statement.executeUpdate(s);
+                    statement.executeUpdate(sql);
                 }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            } finally {
+            }finally {
                 DBUtil.close(connection, statement);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("数据库初始化任务错误");
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         init();
     }
 }
